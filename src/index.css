@@ -1,0 +1,128 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Jost', sans-serif;
+  --font-heading: 'Gilda Display', serif;
+
+  /* Feelings palette, olive/sage variant */
+  --color-primary: #668c25;
+  --color-primary-dark: #55771f;
+  --color-primary-soft: #9cb474;
+  --color-ink: #002642;
+  --color-body: #848892;
+  --color-text: #585858;
+  --color-muted: #7b7b7b;
+  --color-cream: #f8faf4;
+  --color-line: #e2e9d8;
+
+  --shadow-card: 0 0 6.1px 3.9px rgb(28 31 86 / 0.06);
+  --shadow-oval: 0 2px 16.8px 3.2px rgb(0 0 0 / 0.08);
+
+  --animate-kenburn: kenburn 25s 2s ease-in-out infinite alternate;
+  --animate-float: float 5s ease-in-out infinite;
+  --animate-marquee: marquee 45s linear infinite;
+  --animate-petal-fall: petal-fall linear infinite;
+  --animate-petal-sway: petal-sway ease-in-out infinite alternate;
+  --animate-petal-spin: petal-spin linear infinite;
+
+  /* Slow zoom on portraits, as in the original template */
+  @keyframes kenburn {
+    from {
+      transform: scale(1);
+    }
+    to {
+      transform: scale(1.15);
+    }
+  }
+
+  /* Falling petals: one layer drops, one sways sideways, one tumbles. */
+  @keyframes petal-fall {
+    from {
+      transform: translate3d(0, -20vh, 0);
+    }
+    to {
+      transform: translate3d(0, 115vh, 0);
+    }
+  }
+
+  @keyframes petal-sway {
+    from {
+      transform: translateX(calc(var(--sway) * -1));
+    }
+    to {
+      transform: translateX(var(--sway));
+    }
+  }
+
+  @keyframes petal-spin {
+    from {
+      transform: rotate(var(--tilt));
+    }
+    to {
+      transform: rotate(calc(var(--tilt) + 360deg));
+    }
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translate(0, 0);
+    }
+    50% {
+      transform: translate(-12px, -18px);
+    }
+  }
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+}
+
+@layer base {
+  body {
+    @apply bg-white font-sans text-base text-body antialiased;
+    overflow-x: hidden;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-heading font-normal text-ink;
+  }
+
+  p {
+    @apply leading-[1.8em];
+  }
+}
+
+/* Vertical rhythm shared by every section: 120/90/80px in the original. */
+@utility section-padding {
+  @apply py-20 md:py-[90px] lg:py-[120px];
+}
+
+/* Pill buttons (.theme-btn / .theme-btn-s3). */
+@utility btn-primary {
+  @apply inline-block cursor-pointer rounded-full border-0 bg-primary px-[18px] py-3 text-sm font-semibold text-white transition-colors duration-300 hover:bg-primary-dark md:px-11 md:py-[15px] md:text-base;
+}
+
+@utility btn-outline {
+  @apply inline-block cursor-pointer rounded-full border border-white bg-white/20 px-[18px] py-3 text-sm font-semibold text-white transition-colors duration-300 hover:bg-white hover:text-primary md:px-11 md:py-[15px] md:text-base;
+}
+
+/* RSVP fields: bottom-ruled, transparent, no chrome. */
+@utility field {
+  @apply h-[50px] w-full border-0 border-b border-line bg-transparent text-[17px] text-[#787878] outline-none placeholder:text-[#787878] focus:border-primary;
+}
+
+/* Framed photo: thin inset white rule over the image (.wpo-story-img:before). */
+@utility inset-rule {
+  @apply after:pointer-events-none after:absolute after:top-[4%] after:left-[3%] after:z-10 after:h-[92%] after:w-[94%] after:border after:border-white after:content-[''];
+}

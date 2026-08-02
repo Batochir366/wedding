@@ -23,6 +23,18 @@ export default function Reveal({
 }: RevealProps) {
   const ref = useRef<HTMLDivElement>(null)
   const [shown, setShown] = useState(false)
+  // Horizontal slides expand layout width on phones — keep mobile to vertical only.
+  const [motionDir, setMotionDir] = useState<Direction>('up')
+
+  useEffect(() => {
+    const narrow = window.matchMedia('(max-width: 639px)')
+    const sync = () => {
+      setMotionDir(narrow.matches ? 'up' : direction)
+    }
+    sync()
+    narrow.addEventListener('change', sync)
+    return () => narrow.removeEventListener('change', sync)
+  }, [direction])
 
   useEffect(() => {
     const node = ref.current
@@ -40,7 +52,7 @@ export default function Reveal({
           observer.disconnect()
         }
       },
-      { threshold: 0.15, rootMargin: '0px 0px -60px 0px' },
+      { threshold: 0.12, rootMargin: '0px 0px -40px 0px' },
     )
 
     observer.observe(node)
@@ -52,7 +64,7 @@ export default function Reveal({
       ref={ref}
       style={{ transitionDelay: `${delay}ms` }}
       className={`transition-all duration-1000 ease-out ${
-        shown ? 'translate-x-0 translate-y-0 opacity-100' : hidden[direction]
+        shown ? 'translate-x-0 translate-y-0 opacity-100' : hidden[motionDir]
       } ${className}`}
     >
       {children}

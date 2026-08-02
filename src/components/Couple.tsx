@@ -6,7 +6,7 @@ const [bride, groom] = couple
 
 export default function Couple() {
   return (
-    <section id="couple" className="section-padding relative z-10 overflow-hidden">
+    <section id="couple" className="section-padding relative z-10 scroll-mt-24 overflow-hidden md:scroll-mt-28">
       <div className="mx-auto max-w-[1320px] px-4">
         <div className="flex flex-col items-center lg:flex-row lg:justify-center">
           <Reveal direction="left" className="w-full lg:w-[29%]">

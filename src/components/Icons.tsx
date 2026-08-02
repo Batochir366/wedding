@@ -55,6 +55,25 @@ export const PlayIcon = (props: IconProps) => (
   </svg>
 )
 
+export const PauseIcon = (props: IconProps) => (
+  <svg {...base} viewBox="0 0 24 24" fill="currentColor" {...props}>
+    <rect x="6" y="5" width="4" height="14" rx="1" />
+    <rect x="14" y="5" width="4" height="14" rx="1" />
+  </svg>
+)
+
+export const ChevronLeftIcon = (props: IconProps) => (
+  <svg {...stroke} viewBox="0 0 24 24" {...props}>
+    <path d="m15 6-6 6 6 6" />
+  </svg>
+)
+
+export const ChevronRightIcon = (props: IconProps) => (
+  <svg {...stroke} viewBox="0 0 24 24" {...props}>
+    <path d="m9 6 6 6-6 6" />
+  </svg>
+)
+
 export const UserIcon = (props: IconProps) => (
   <svg {...stroke} viewBox="0 0 24 24" {...props}>
     <circle cx="12" cy="8" r="4" />
@@ -149,6 +168,9 @@ export const icons = {
   balloon: BalloonIcon,
   rings: RingsIcon,
   play: PlayIcon,
+  pause: PauseIcon,
+  chevronLeft: ChevronLeftIcon,
+  chevronRight: ChevronRightIcon,
   user: UserIcon,
   mail: MailIcon,
   phone: PhoneIcon,

@@ -94,6 +94,7 @@ export function deleteGreeting(id: string) {
 export type GalleryImage = {
   id: string
   image: string
+  sortOrder?: number | null
   createdAt: string
 }
 
@@ -102,9 +103,16 @@ export function listGallery() {
 }
 
 export function createGalleryImage(payload: { image: string }) {
-  return request<{ id: string }>('/api/gallery', {
+  return request<{ id: string; sortOrder: number }>('/api/gallery', {
     method: 'POST',
     body: JSON.stringify(payload),
+  }, true)
+}
+
+export function reorderGallery(ids: string[]) {
+  return request<{ ok: boolean }>('/api/gallery/reorder', {
+    method: 'PUT',
+    body: JSON.stringify({ ids }),
   }, true)
 }
 

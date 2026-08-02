@@ -113,7 +113,7 @@ export default function Greetings() {
   const track = sequence.length ? [...sequence, ...sequence] : []
 
   return (
-    <section id="greetings" className="section-padding relative z-10 overflow-hidden bg-cream">
+    <section id="greetings" className="section-padding relative z-10 scroll-mt-24 overflow-hidden bg-cream md:scroll-mt-28">
       <div className="mx-auto max-w-[1320px] px-4">
         <SectionTitle>{sectionTitles.greetings}</SectionTitle>
       </div>

@@ -212,19 +212,26 @@ app.delete('/api/greetings/:id', requireAdmin, async (req, res) => {
   }
 })
 
+function compareGallery(a: GalleryDoc, b: GalleryDoc) {
+  const ao = a.sortOrder
+  const bo = b.sortOrder
+  if (typeof ao === 'number' && typeof bo === 'number' && ao !== bo) return ao - bo
+  if (typeof ao === 'number' && typeof bo !== 'number') return -1
+  if (typeof ao !== 'number' && typeof bo === 'number') return 1
+  return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+}
+
 app.get('/api/gallery', async (_req, res) => {
   try {
     const db = await getDb()
-    const rows = await db
-      .collection<GalleryDoc>('gallery')
-      .find({})
-      .sort({ createdAt: -1 })
-      .toArray()
+    const rows = await db.collection<GalleryDoc>('gallery').find({}).toArray()
+    rows.sort(compareGallery)
 
     res.json(
       rows.map((row) => ({
         id: row._id?.toString(),
         image: row.image,
+        sortOrder: row.sortOrder ?? null,
         createdAt: row.createdAt,
       })),
     )
@@ -253,18 +260,56 @@ app.post('/api/gallery', requireAdmin, async (req, res) => {
       return
     }
 
+    const db = await getDb()
+    const existing = await db.collection<GalleryDoc>('gallery').find({}).toArray()
+    const ordered = existing
+      .map((row) => row.sortOrder)
+      .filter((value): value is number => typeof value === 'number')
+    const sortOrder = ordered.length ? Math.min(...ordered) - 1 : 0
+
     const doc: GalleryDoc = {
       image,
+      sortOrder,
       createdAt: new Date(),
     }
 
-    const db = await getDb()
     const result = await db.collection<GalleryDoc>('gallery').insertOne(doc)
 
-    res.status(201).json({ id: result.insertedId.toString() })
+    res.status(201).json({ id: result.insertedId.toString(), sortOrder })
   } catch (error) {
     console.error(error)
     res.status(500).json({ error: 'Could not save gallery image' })
+  }
+})
+
+app.put('/api/gallery/reorder', requireAdmin, async (req, res) => {
+  try {
+    const ids = Array.isArray(req.body?.ids) ? req.body.ids : null
+    if (!ids || !ids.every((id: unknown) => typeof id === 'string' && ObjectId.isValid(id))) {
+      res.status(400).json({ error: 'ids must be an array of valid gallery ids' })
+      return
+    }
+
+    const db = await getDb()
+    const collection = db.collection<GalleryDoc>('gallery')
+    const existing = await collection.find({}).toArray()
+    const existingIds = new Set(existing.map((row) => row._id?.toString()).filter(Boolean))
+
+    if (ids.length !== existingIds.size || ids.some((id: string) => !existingIds.has(id))) {
+      res.status(400).json({ error: 'ids must include every gallery image exactly once' })
+      return
+    }
+
+    await Promise.all(
+      ids.map((id: string, index: number) =>
+        collection.updateOne({ _id: new ObjectId(id) }, { $set: { sortOrder: index } }),
+      ),
+    )
+
+    res.json({ ok: true })
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Could not reorder gallery' })
   }
 })
 

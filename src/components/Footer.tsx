@@ -1,5 +1,5 @@
 import { footer, ui } from "../data/site";
-import { MailIcon, MapPinIcon, PhoneIcon } from "./Icons";
+import { MapPinIcon, PhoneIcon } from "./Icons";
 import Logo from "./Logo";
 import SocialLinks from "./SocialLinks";
 
@@ -24,34 +24,12 @@ export default function Footer() {
             <SocialLinks variant="solid" className="pt-2.5" />
           </div>
 
-          <div className="xl:pl-5">
-            <WidgetTitle>{ui.footerHeadings.information}</WidgetTitle>
-            <ul className="space-y-[15px]">
-              {footer.links.map((link) => (
-                <li key={link.href}>
-                  <a
-                    href={link.href}
-                    className="text-[16px] text-[#575757] hover:underline"
-                  >
-                    {link.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          </div>
-
           <div>
             <WidgetTitle>{ui.footerHeadings.contact}</WidgetTitle>
             <ul className="space-y-[15px] text-primary">
               <li className="flex items-start gap-3">
-                <MailIcon className="mt-1 shrink-0" />
-                <a href={`mailto:${footer.email}`}>{footer.email}</a>
-              </li>
-              <li className="flex items-start gap-3">
                 <PhoneIcon className="mt-1 shrink-0" />
-                <a href={`tel:${footer.phone.replace(/\s/g, "")}`}>
-                  {footer.phone}
-                </a>
+                <a>{footer.phone}</a>
               </li>
               <li className="flex items-start gap-3">
                 <MapPinIcon className="mt-1 shrink-0" />

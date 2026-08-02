@@ -62,5 +62,7 @@ export type GreetingDoc = {
 export type GalleryDoc = {
   _id?: string
   image: string
+  /** Lower numbers appear first. Optional for older docs. */
+  sortOrder?: number
   createdAt: Date
 }

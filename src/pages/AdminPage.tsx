@@ -1,4 +1,12 @@
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type DragEvent,
+  type FormEvent,
+} from 'react'
 import {
   clearAdminToken,
   createGalleryImage,
@@ -10,6 +18,7 @@ import {
   listGreetings,
   listRsvps,
   loginAdmin,
+  reorderGallery,
   setAdminToken,
   type GalleryImage,
   type Greeting,
@@ -40,7 +49,13 @@ export default function AdminPage() {
   const [gallery, setGallery] = useState<GalleryImage[]>([])
   const [loading, setLoading] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [reordering, setReordering] = useState(false)
+  const [dragIndex, setDragIndex] = useState<number | null>(null)
   const [error, setError] = useState('')
+  const dragIndexRef = useRef<number | null>(null)
+  const galleryBeforeDrag = useRef<GalleryImage[] | null>(null)
+  const galleryRef = useRef(gallery)
+  galleryRef.current = gallery
 
   const guestTotal = useMemo(() => {
     return rsvps.reduce((sum, row) => {
@@ -111,9 +126,9 @@ export default function AdminPage() {
     try {
       for (const file of files) {
         const image = await fileToCompressedDataUrl(file, 1600, 0.82)
-        const { id } = await createGalleryImage({ image })
+        const { id, sortOrder } = await createGalleryImage({ image })
         setGallery((current) => [
-          { id, image, createdAt: new Date().toISOString() },
+          { id, image, sortOrder, createdAt: new Date().toISOString() },
           ...current,
         ])
       }
@@ -122,6 +137,61 @@ export default function AdminPage() {
     } finally {
       setUploading(false)
     }
+  }
+
+  const persistGalleryOrder = async (next: GalleryImage[], previous: GalleryImage[]) => {
+    const unchanged =
+      next.length === previous.length && next.every((row, index) => row.id === previous[index]?.id)
+    if (unchanged) return
+
+    setReordering(true)
+    setError('')
+    try {
+      await reorderGallery(next.map((row) => row.id))
+    } catch (err) {
+      setGallery(previous)
+      setError(err instanceof Error ? err.message : 'Could not reorder photos')
+    } finally {
+      setReordering(false)
+    }
+  }
+
+  const onGalleryDragStart = (index: number) => (event: DragEvent<HTMLElement>) => {
+    if (reordering) {
+      event.preventDefault()
+      return
+    }
+    galleryBeforeDrag.current = gallery
+    dragIndexRef.current = index
+    setDragIndex(index)
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', String(index))
+  }
+
+  const onGalleryDragOver = (overIndex: number) => (event: DragEvent<HTMLElement>) => {
+    event.preventDefault()
+    event.dataTransfer.dropEffect = 'move'
+    const fromIndex = dragIndexRef.current
+    if (fromIndex === null || fromIndex === overIndex || reordering) return
+
+    setGallery((current) => {
+      const next = [...current]
+      const [item] = next.splice(fromIndex, 1)
+      next.splice(overIndex, 0, item)
+      galleryRef.current = next
+      return next
+    })
+    dragIndexRef.current = overIndex
+    setDragIndex(overIndex)
+  }
+
+  const onGalleryDragEnd = () => {
+    const previous = galleryBeforeDrag.current
+    galleryBeforeDrag.current = null
+    dragIndexRef.current = null
+    setDragIndex(null)
+    if (!previous) return
+    void persistGalleryOrder(galleryRef.current, previous)
   }
 
   if (!token) {
@@ -316,20 +386,43 @@ export default function AdminPage() {
                 />
               </label>
               <p className="text-sm text-muted">
-                These appear in Дурсамжит агшнууд. You can select multiple images.
+                These appear in Дурсамжит агшнууд. Drag a photo to change its order.
               </p>
             </div>
 
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-              {gallery.map((row) => (
-                <article key={row.id} className="overflow-hidden rounded-xl bg-white shadow-card">
-                  <img src={row.image} alt="" className="aspect-[4/3] w-full object-cover" />
+              {gallery.map((row, index) => (
+                <article
+                  key={row.id}
+                  draggable={!reordering}
+                  onDragStart={onGalleryDragStart(index)}
+                  onDragOver={onGalleryDragOver(index)}
+                  onDragEnd={onGalleryDragEnd}
+                  className={`overflow-hidden rounded-xl bg-white shadow-card transition ${
+                    dragIndex === index
+                      ? 'cursor-grabbing opacity-60 ring-2 ring-primary'
+                      : 'cursor-grab'
+                  } ${reordering ? 'pointer-events-none opacity-80' : ''}`}
+                >
+                  <div className="relative">
+                    <img
+                      src={row.image}
+                      alt=""
+                      draggable={false}
+                      className="pointer-events-none aspect-[4/3] w-full object-cover"
+                    />
+                    <span className="absolute top-2 left-2 rounded bg-black/55 px-2 py-0.5 text-xs font-semibold text-white">
+                      {index + 1}
+                    </span>
+                  </div>
                   <div className="flex items-center justify-between gap-2 px-3 py-2">
-                    <span className="truncate text-xs text-muted">{formatDate(row.createdAt)}</span>
+                    <span className="text-xs text-muted">Drag to reorder</span>
                     <button
                       type="button"
                       className="shrink-0 text-sm text-red-600 hover:underline"
-                      onClick={async () => {
+                      onPointerDown={(event) => event.stopPropagation()}
+                      onClick={async (event) => {
+                        event.stopPropagation()
                         if (!confirm('Delete this gallery photo?')) return
                         await deleteGalleryImage(row.id)
                         setGallery((current) => current.filter((item) => item.id !== row.id))

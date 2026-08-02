@@ -1,6 +1,5 @@
 import { couple } from '../data/site'
 import Reveal from './Reveal'
-import SocialLinks from './SocialLinks'
 
 const [bride, groom] = couple
 
@@ -14,8 +13,7 @@ export default function Couple() {
               <h3 className="mb-3 font-heading text-[26px] leading-tight sm:text-[30px]">
                 {bride.name}
               </h3>
-              <p className="mb-2.5 text-text">{bride.bio}</p>
-              <SocialLinks className="justify-center pt-2.5 lg:justify-end lg:pt-[15px]" />
+              <p className="text-text">{bride.bio}</p>
             </div>
           </Reveal>
 
@@ -36,8 +34,7 @@ export default function Couple() {
               <h3 className="mb-3 font-heading text-[26px] leading-tight sm:text-[30px]">
                 {groom.name}
               </h3>
-              <p className="mb-2.5 text-text">{groom.bio}</p>
-              <SocialLinks className="justify-center pt-2.5 lg:justify-start lg:pt-[15px]" />
+              <p className="text-text">{groom.bio}</p>
             </div>
           </Reveal>
         </div>

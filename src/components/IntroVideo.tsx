@@ -16,13 +16,20 @@ interface IntroVideoProps {
 
 export default function IntroVideo({ onStartMusic }: IntroVideoProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [phase, setPhase] = useState<Phase>(() => {
-    if (typeof window === "undefined") return "done";
-    if (sessionStorage.getItem(SESSION_KEY) === "1") return "done";
-    return "idle";
-  });
+  const phaseRef = useRef<Phase>(
+    typeof window !== "undefined" && sessionStorage.getItem(SESSION_KEY) === "1"
+      ? "done"
+      : "idle",
+  );
+  const fadeTimerRef = useRef<number | undefined>(undefined);
+  const [phase, setPhase] = useState<Phase>(phaseRef.current);
   const [videoSrc, setVideoSrc] = useState<string | undefined>(undefined);
   const [videoVisible, setVideoVisible] = useState(false);
+
+  const setIntroPhase = (next: Phase) => {
+    phaseRef.current = next;
+    setPhase(next);
+  };
 
   useEffect(() => {
     if (phase === "done") return;
@@ -39,39 +46,59 @@ export default function IntroVideo({ onStartMusic }: IntroVideoProps) {
     }
   }, [phase]);
 
+  useEffect(() => {
+    return () => {
+      if (fadeTimerRef.current !== undefined) {
+        window.clearTimeout(fadeTimerRef.current);
+      }
+    };
+  }, []);
+
   const finish = () => {
-    if (phase === "fading" || phase === "done") return;
-    setPhase("fading");
-    window.setTimeout(() => setPhase("done"), 1100);
+    if (phaseRef.current === "fading" || phaseRef.current === "done") return;
+
+    const video = videoRef.current;
+    if (video) {
+      video.pause();
+      video.removeAttribute("src");
+      video.load();
+    }
+
+    setVideoVisible(false);
+    setIntroPhase("fading");
+    fadeTimerRef.current = window.setTimeout(() => {
+      setVideoSrc(undefined);
+      setIntroPhase("done");
+    }, 1100);
+  };
+
+  const skip = () => {
+    onStartMusic?.();
+    finish();
   };
 
   const start = () => {
-    if (phase !== "idle") return;
+    if (phaseRef.current !== "idle") return;
 
-    // Unlock / start music in the same user-gesture turn.
     onStartMusic?.();
 
-    // Reduced motion: open the invitation without playing the video.
     if (prefersReducedMotion()) {
       finish();
       return;
     }
 
-    setPhase("playing");
+    setIntroPhase("playing");
     setVideoSrc(introVideo.src);
 
-    // Play on the next frame so the <video> has its src attached.
     requestAnimationFrame(() => {
       const video = videoRef.current;
-      if (!video) return;
-      video.load();
+      if (!video || phaseRef.current !== "playing") return;
+
       const playPromise = video.play();
       if (playPromise && typeof playPromise.catch === "function") {
         playPromise.catch(() => {
-          /* Stay on poster until another tap if autoplay is blocked. */
-          setPhase("idle");
-          setVideoSrc(undefined);
-          setVideoVisible(false);
+          /* Don't bounce back to the poster if the guest already skipped. */
+          if (phaseRef.current === "playing") finish();
         });
       }
     });
@@ -79,7 +106,7 @@ export default function IntroVideo({ onStartMusic }: IntroVideoProps) {
 
   const onTimeUpdate = () => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || phaseRef.current !== "playing") return;
     if (video.currentTime > 0.05 && !videoVisible) {
       setVideoVisible(true);
     }
@@ -100,7 +127,6 @@ export default function IntroVideo({ onStartMusic }: IntroVideoProps) {
         fading ? "pointer-events-none opacity-0" : "opacity-100"
       }`}
     >
-      {/* Keep a real <img> above any video so iOS never flashes a black frame. */}
       <img
         src={introVideo.poster}
         alt=""
@@ -145,17 +171,11 @@ export default function IntroVideo({ onStartMusic }: IntroVideoProps) {
           type="button"
           onClick={(event) => {
             event.stopPropagation();
-            if (phase === "idle") {
-              start();
-              return;
-            }
-            // Skipping mid-play still ensures music is running.
-            onStartMusic?.();
-            finish();
+            skip();
           }}
           className="absolute top-[max(1.25rem,env(safe-area-inset-top))] right-5 z-30 rounded-full border border-ink/15 bg-white/80 px-4 py-2 text-xs font-semibold tracking-wide text-ink/70 backdrop-blur-sm transition hover:bg-white hover:text-ink"
         >
-          {phase === "idle" ? ui.intro.open : ui.intro.skip}
+          {ui.intro.skip}
         </button>
       )}
     </div>
